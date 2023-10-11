@@ -1,81 +1,70 @@
-// Display the default plot
+// Constants for data URLs
+const DATA_URL = "https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json";
+
+// Initialization function
 function init() {
-    d3.json("https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json").then(function (data) {
-        // Create array to hold all names (all ID names)
-        var names = data.names;
-        // Append an option in the dropdown
-        var dropdown = d3.select('#selDataset');
-        names.forEach(function (name) {
-            dropdown.append('option').text(name);
-        });
-
-        // Get the initial ID to display
-        var initialId = names[0];
-
-        // Call the updatePlotly function with the initial ID
+    d3.json(DATA_URL).then(function (data) {
+        const names = data.names;
+        const dropdown = d3.select('#selDataset');
+        names.forEach(name => dropdown.append('option').text(name));
+        const initialId = names[0];
         updatePlotly(initialId);
     });
 }
 
-// Update the plot 
+// Update the plot
 function updatePlotly(id) {
-    d3.json("https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json").then(function (data) {
-        // Get the sample data
-        var samples = data.samples.filter(sample => sample.id === id)[0];
-        var sample_values = samples.sample_values;
-        var otu_ids = samples.otu_ids;
-        var otu_labels = samples.otu_labels;
+    d3.json(DATA_URL).then(function (data) {
+        const samples = data.samples.find(sample => sample.id === id);
+        const { sample_values, otu_ids, otu_labels } = samples;
 
-        // Get the demographic information
-        var metadata = data.metadata.filter(metadata => metadata.id === parseInt(id))[0];
+        const metadata = data.metadata.find(metadata => metadata.id === parseInt(id));
         displayDemographicInfo(metadata);
 
-        // Create Bar Chart
         createBarChart(sample_values, otu_ids, otu_labels);
-
-        // Create a bubble chart
         createBubbleChart(otu_ids, sample_values, otu_labels);
-
-        // Plot the weekly washing frequency in a gauge chart
         plotGaugeChart(metadata.wfreq);
     });
 }
 
+// Display demographic information
 function displayDemographicInfo(metadata) {
-    var sampleMetadata = d3.select("#sample-metadata");
+    const sampleMetadata = d3.select("#sample-metadata");
     sampleMetadata.html('');
     Object.entries(metadata).forEach(([key, value]) => {
         sampleMetadata.append('p').text(`${key}: ${value}`);
     });
 }
 
+// Create the bar chart
 function createBarChart(values, ids, labels) {
-    var trace1 = {
+    const trace1 = {
         x: values.slice(0, 10).reverse(),
         y: ids.slice(0, 10).map(id => "OTU " + id).reverse(),
         text: labels.slice(0, 10).reverse(),
         type: 'bar',
         orientation: 'h',
         marker: {
-            color: 'rgb(27, 161, 187)',
+            color: 'DeepSkyBlue',  // Changed from numeric to word form
             opacity: 0.6,
             line: {
-                color: 'rgb(8, 48, 107)',
+                color: 'DarkBlue',  // Changed from numeric to word form
                 width: 1.5
             }
         }
     };
 
-    var layout1 = {
+    const layout1 = {
         title: '<b>Top 10 OTU</b>',
     };
 
-    var data = [trace1];
+    const data = [trace1];
     Plotly.newPlot('bar', data, layout1);
 }
 
+// Create the bubble chart
 function createBubbleChart(otu_ids, sample_values, otu_labels) {
-    var trace2 = {
+    const trace2 = {
         x: otu_ids,
         y: sample_values,
         text: otu_labels,
@@ -86,7 +75,7 @@ function createBubbleChart(otu_ids, sample_values, otu_labels) {
         }
     };
 
-    var layout2 = {
+    const layout2 = {
         title: '<b>Bubble Chart</b>',
         automargin: true,
         autosize: true,
@@ -100,34 +89,32 @@ function createBubbleChart(otu_ids, sample_values, otu_labels) {
         }
     };
 
-    var data2 = [trace2];
+    const data2 = [trace2];
     Plotly.newPlot('bubble', data2, layout2);
 }
 
+// Create the gauge chart
 function plotGaugeChart(wFreq) {
-    var level = wFreq * 20;
+    const level = wFreq * 20;
+    const degrees = 180 - level;
+    const radius = 0.5;
+    const radians = (degrees * Math.PI) / 180;
+    const x = radius * Math.cos(radians);
+    const y = radius * Math.sin(radians);
 
-    // Trig to calc meter point
-    var degrees = 180 - level,
-        radius = 0.5;
-    var radians = (degrees * Math.PI) / 180;
-    var x = radius * Math.cos(radians);
-    var y = radius * Math.sin(radians);
+    const mainPath = 'M -.0 -0.05 L .0 0.05 L ';
+    const pathX = String(x);
+    const space = ' ';
+    const pathY = String(y);
+    const pathEnd = ' Z';
+    const path = mainPath.concat(pathX, space, pathY, pathEnd);
 
-    // Path: creating a triangle
-    var mainPath = 'M -.0 -0.05 L .0 0.05 L ',
-        pathX = String(x),
-        space = ' ',
-        pathY = String(y),
-        pathEnd = ' Z';
-    var path = mainPath.concat(pathX, space, pathY, pathEnd);
-
-    var dataGauge = [
+    const dataGauge = [
         {
             type: 'scatter',
             x: [0],
             y: [0],
-            marker: { size: 28, color: '850000' },
+            marker: { size: 28, color: 'DarkRed' },  // Changed from numeric to word form
             showlegend: false,
             name: 'Washing Frequency',
             text: level,
@@ -141,16 +128,16 @@ function plotGaugeChart(wFreq) {
             textposition: 'inside',
             marker: {
                 colors: [
-                    'rgba(14, 127, 0, .5)',
-                    'rgba(110, 154, 22, .5)',
-                    'rgba(170, 202, 42, .5)',
-                    'rgba(202, 209, 95, .5)',
-                    'rgba(210, 206, 145, .5)',
-                    'rgba(232, 226, 202, .5)',
-                    'rgba(232, 226, 202, .5)',
-                    'rgba(232, 226, 202, .5)',
-                    'rgba(232, 226, 202, .5)',
-                    'rgba(255, 255, 255, 0)',
+                    'LimeGreen',
+                    'Lime',
+                    'YellowGreen',
+                    'Chartreuse',
+                    'LightGoldenRodYellow',
+                    'LightGray',
+                    'LightGray',
+                    'LightGray',
+                    'LightGray',
+                    'RoyalBlue',  // Changed from numeric to word form
                 ],
             },
             labels: ['8-9', '7-8', '6-7', '5-6', '4-5', '3-4', '2-3', '1-2', '0-1', ''],
@@ -158,13 +145,13 @@ function plotGaugeChart(wFreq) {
         },
     ];
 
-    var layoutGauge = {
+    const layoutGauge = {
         shapes: [
             {
                 type: 'path',
                 path: path,
-                fillcolor: '850000',
-                line: { color: '850000' },
+                fillcolor: 'LimeGreen',  // Changed from numeric to word form
+                line: { color: 'Black' },  // Changed from numeric to word form
             },
         ],
         title: '<b>Belly Button Washing Frequency</b><br>Scrubs per Week',
@@ -178,15 +165,14 @@ function plotGaugeChart(wFreq) {
         },
         yaxis: {
             zeroline: false,
-        showticklabels: false,
-        showgrid: false,
-        range: [-1, 1],
-    },
-};
+            showticklabels: false,
+            showgrid: false,
+            range: [-1, 1],
+        },
+    };
 
-var data = [dataGauge];
-
-Plotly.newPlot('gauge', data, layoutGauge);
+    const data = [dataGauge];
+    Plotly.newPlot('gauge', data, layoutGauge);
 }
 
 // Call updatePlotly
